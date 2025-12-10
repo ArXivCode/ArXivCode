@@ -285,6 +285,168 @@ def process_paper_code_with_files(
     return results
 
 
+def process_code_snippets(
+    json_path: str,
+    output_path: Optional[str] = None,
+    model_name: str = "microsoft/codebert-base",
+    batch_size: int = 8,
+    max_length: int = 512,
+    device: Optional[str] = None
+) -> List[Dict]:
+    """
+    Process code snippets JSON (from Task 2) and generate embeddings for each snippet.
+    
+    This function processes the flat list format from extract_snippets.py where each
+    snippet already has code_text at the top level.
+    
+    Args:
+        json_path: Path to code_snippets.json (output from extract_snippets.py)
+        output_path: Optional path to save embeddings JSON
+        model_name: CodeBERT model name
+        batch_size: Batch size for processing (larger = faster but more memory)
+        max_length: Maximum sequence length for tokenization
+        device: Device to use ('cuda', 'cpu', or None for auto)
+    
+    Returns:
+        List of dictionaries with embeddings and metadata
+    """
+    logger.info("=" * 60)
+    logger.info("Generating Code Embeddings from Code Snippets")
+    logger.info("=" * 60)
+    logger.info(f"Input JSON: {json_path}")
+    logger.info(f"Model: {model_name}")
+    logger.info(f"Batch size: {batch_size}")
+    logger.info(f"Max length: {max_length}")
+    logger.info("=" * 60)
+    
+    # Load JSON file
+    json_path_obj = Path(json_path)
+    if not json_path_obj.exists():
+        raise FileNotFoundError(f"File not found: {json_path}")
+    
+    logger.info(f"Loading JSON file: {json_path}")
+    with open(json_path, "r", encoding="utf-8") as f:
+        snippets = json.load(f)
+    
+    logger.info(f"Loaded {len(snippets)} code snippets")
+    
+    # Load CodeBERT encoder (pretrained, no fine-tuning)
+    logger.info(f"\nLoading CodeBERT model: {model_name}")
+    logger.info("NOTE: This is INFERENCE ONLY - the model will NOT be fine-tuned.")
+    encoder = CodeEncoder(
+        model_name=model_name,
+        max_length=max_length,
+        device=device
+    )
+    encoder.model.eval()  # Ensure eval mode (no training)
+    
+    # Prepare code texts and metadata
+    code_texts = []
+    metadata_list = []
+    
+    for snippet in snippets:
+        code_text = snippet.get("code_text", "")
+        if not code_text.strip():
+            continue
+        
+        code_texts.append(code_text)
+        
+        # Extract and organize metadata
+        metadata_list.append({
+            "paper_id": snippet.get("paper_id", ""),
+            "paper_title": snippet.get("paper_title", ""),
+            "paper_url": snippet.get("paper_url", ""),
+            "repo_name": snippet.get("repo_name", ""),
+            "repo_url": snippet.get("repo_url", ""),
+            "file_path": snippet.get("file_path", ""),
+            "function_name": snippet.get("function_name", ""),
+            "line_numbers": snippet.get("line_numbers", {}),
+            "has_docstring": snippet.get("has_docstring", False),
+            "num_lines": snippet.get("num_lines", 0),
+        })
+    
+    logger.info(f"\nFound {len(code_texts)} code snippets to process")
+    
+    # Process in batches
+    results = []
+    num_batches = (len(code_texts) + batch_size - 1) // batch_size
+    
+    logger.info(f"\nGenerating embeddings (processing {num_batches} batches)...")
+    
+    for batch_idx in tqdm(range(0, len(code_texts), batch_size), desc="Processing batches"):
+        batch_code_texts = code_texts[batch_idx:batch_idx + batch_size]
+        batch_metadata = metadata_list[batch_idx:batch_idx + batch_size]
+        
+        # Generate embeddings for batch
+        try:
+            embeddings = generate_embeddings_batch(
+                encoder=encoder,
+                code_texts=batch_code_texts,
+                max_length=max_length
+            )
+            
+            # Store results
+            for i, (embedding, metadata) in enumerate(zip(embeddings, batch_metadata)):
+                results.append({
+                    "embedding": embedding.tolist(),  # Convert to list for JSON
+                    "embedding_dim": len(embedding),
+                    "metadata": metadata
+                })
+        
+        except Exception as e:
+            logger.warning(f"Error processing batch {batch_idx // batch_size + 1}: {e}")
+            # Fallback to individual processing for this batch
+            for code_text, metadata in zip(batch_code_texts, batch_metadata):
+                try:
+                    embedding = generate_embedding(
+                        encoder=encoder,
+                        code_text=code_text,
+                        max_length=max_length
+                    )
+                    results.append({
+                        "embedding": embedding.tolist(),
+                        "embedding_dim": len(embedding),
+                        "metadata": metadata
+                    })
+                except Exception as e2:
+                    logger.warning(f"Error processing individual snippet: {e2}")
+                    continue
+        
+        # Clear cache periodically
+        if encoder.device == "cuda" and (batch_idx // batch_size) % 10 == 0:
+            torch.cuda.empty_cache()
+    
+    logger.info(f"\n✓ Generated embeddings for {len(results)} code snippets")
+    
+    # Save results if output path provided
+    if output_path:
+        output_path_obj = Path(output_path)
+        output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"\nSaving embeddings to: {output_path}")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
+        logger.info(f"✓ Saved {len(results)} embeddings to {output_path}")
+    
+    # Print summary
+    logger.info("\n" + "=" * 60)
+    logger.info("SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"Total snippets processed: {len(results)}")
+    if results:
+        logger.info(f"Embedding dimension: {results[0]['embedding_dim']}")
+        logger.info(f"Sample metadata:")
+        sample_meta = results[0]["metadata"]
+        logger.info(f"  Paper ID: {sample_meta.get('paper_id', 'N/A')}")
+        logger.info(f"  Paper: {sample_meta.get('paper_title', 'N/A')[:50]}...")
+        logger.info(f"  Repo: {sample_meta.get('repo_name', 'N/A')}")
+        logger.info(f"  Function: {sample_meta.get('function_name', 'N/A')}")
+        logger.info(f"  File: {sample_meta.get('file_path', 'N/A')}")
+    logger.info("=" * 60)
+    
+    return results
+
+
 def build_faiss_index_from_embeddings(
     embeddings_json_path: str,
     faiss_index_path: str,
@@ -389,13 +551,18 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Generate embeddings from pretrained CodeBERT for code files in paper_code_with_files.json"
+        description="Generate embeddings from pretrained CodeBERT for code files or code snippets"
     )
     parser.add_argument(
         "--json_path",
         type=str,
         default="data/raw/papers/paper_code_with_files.json",
-        help="Path to paper_code_with_files.json"
+        help="Path to input JSON file (paper_code_with_files.json or code_snippets.json)"
+    )
+    parser.add_argument(
+        "--snippets",
+        action="store_true",
+        help="Process code snippets format (from extract_snippets.py) instead of paper_code_with_files format"
     )
     parser.add_argument(
         "--output_path",
@@ -459,15 +626,25 @@ def main():
     
     args = parser.parse_args()
     
-    # Generate embeddings
-    results = process_paper_code_with_files(
-        json_path=args.json_path,
-        output_path=args.output_path,
-        model_name=args.model_name,
-        batch_size=args.batch_size,
-        max_length=args.max_length,
-        device=args.device
-    )
+    # Generate embeddings - choose function based on format
+    if args.snippets:
+        results = process_code_snippets(
+            json_path=args.json_path,
+            output_path=args.output_path,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            max_length=args.max_length,
+            device=args.device
+        )
+    else:
+        results = process_paper_code_with_files(
+            json_path=args.json_path,
+            output_path=args.output_path,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            max_length=args.max_length,
+            device=args.device
+        )
     
     print("\n" + "=" * 60)
     print("✅ Embedding Generation Complete!")
