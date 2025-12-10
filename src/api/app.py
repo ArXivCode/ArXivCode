@@ -1,205 +1,187 @@
-"""FastAPI application for code explanation service"""
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from typing import Optional
-import os
-import sys
+from pydantic import BaseModel
+import numpy as np
+import faiss
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+# Mock classes for missing pieces
+class DummyEncoder:
+    def encode(self, query):
+        return np.random.rand(768)
 
-from src.models.explanation_llm import ExplanationLLM
+class DummyLLM:
+    def generate_explanation(self, query, code_snippet, paper_title, paper_context):
+        return f"Dummy explanation for {query} in {paper_title}"
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="ArxivCode Explanation API",
-    description="LLM-based code explanation service for research papers",
-    version="1.0.0"
-)
+app = FastAPI(title="ArXivCode API")
 
-# Initialize the LLM (singleton)
+# Load on startup
+encoder = None
+index = None
+metadata = None
 llm = None
 
-
-def get_llm():
-    """Get or create the LLM instance"""
-    global llm
-    if llm is None:
-        llm = ExplanationLLM()
-    return llm
-
-
-# Request/Response models
-class ExplainRequest(BaseModel):
-    """Request model for code explanation"""
-    query: str = Field(..., description="User's search query or question")
-    code_snippet: str = Field(..., description="Code snippet to explain")
-    paper_title: str = Field(..., description="Title of the research paper")
-    paper_context: Optional[str] = Field(
-        None,
-        description="Optional context from the paper (abstract, methods, etc.)"
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "query": "contrastive learning",
-                    "code_snippet": "def contrastive_loss(z1, z2, temperature=0.5):\n    z1 = F.normalize(z1, dim=1)\n    z2 = F.normalize(z2, dim=1)\n    similarity = torch.matmul(z1, z2.T) / temperature\n    labels = torch.arange(z1.size(0)).to(z1.device)\n    return F.cross_entropy(similarity, labels)",
-                    "paper_title": "SimCLR: A Simple Framework for Contrastive Learning",
-                    "paper_context": "Framework for contrastive self-supervised learning using NT-Xent loss"
-                }
-            ]
+@app.on_event("startup")
+async def load_resources():
+    global encoder, index, metadata, llm
+    
+    encoder = DummyEncoder()
+    
+    # SWAP SPOT: Replace this dummy data with real CodeBERT embeddings from Nicholas
+    # When Nicholas provides the files, replace the np.random.rand(10, 768) with:
+    # dummy_embeddings = np.load('data/processed/codebert_embeddings.npy').astype('float32')
+    # And load metadata from: metadata = pickle.load(open('data/processed/codebert_metadata.pkl', 'rb'))
+    dummy_embeddings = np.random.rand(10, 768).astype('float32')
+    faiss.normalize_L2(dummy_embeddings)
+    
+    # Create FAISS index
+    dim = 768
+    index = faiss.IndexFlatIP(dim)
+    index.add(dummy_embeddings)
+    
+    dummy_metadata = [
+        {
+            "paper_title": "Attention Is All You Need",
+            "code_text": "def attention(query, key, value):\n    scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(query.size(-1))\n    attn_weights = F.softmax(scores, dim=-1)\n    return torch.matmul(attn_weights, value)",
+            "function_name": "attention",
+            "file_path": "models/transformer.py",
+            "paper_url": "https://arxiv.org/abs/1706.03762",
+            "repo_url": "https://github.com/tensorflow/models"
+        },
+        {
+            "paper_title": "Batch Normalization",
+            "code_text": "class BatchNorm1d(nn.Module):\n    def __init__(self, num_features):\n        super().__init__()\n        self.weight = nn.Parameter(torch.ones(num_features))\n        self.bias = nn.Parameter(torch.zeros(num_features))\n    \n    def forward(self, x):\n        return F.batch_norm(x, self.running_mean, self.running_var, self.weight, self.bias, self.training)",
+            "function_name": "BatchNorm1d",
+            "file_path": "layers/normalization.py",
+            "paper_url": "https://arxiv.org/abs/1502.03167",
+            "repo_url": "https://github.com/pytorch/pytorch"
+        },
+        {
+            "paper_title": "Dropout Regularization",
+            "code_text": "def dropout(x, p=0.5, training=True):\n    if training:\n        mask = torch.rand_like(x) > p\n        return x * mask / (1 - p)\n    return x",
+            "function_name": "dropout",
+            "file_path": "regularization/dropout.py",
+            "paper_url": "https://arxiv.org/abs/1207.0580",
+            "repo_url": "https://github.com/pytorch/pytorch"
+        },
+        {
+            "paper_title": "Adam Optimizer",
+            "code_text": "class Adam:\n    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999)):\n        self.params = list(params)\n        self.lr = lr\n        self.betas = betas\n        self.t = 0\n    \n    def step(self):\n        self.t += 1\n        for param in self.params:\n            # Adam update logic here\n            pass",
+            "function_name": "Adam",
+            "file_path": "optimizers/adam.py",
+            "paper_url": "https://arxiv.org/abs/1412.6980",
+            "repo_url": "https://github.com/pytorch/pytorch"
+        },
+        {
+            "paper_title": "Cross-Entropy Loss",
+            "code_text": "def cross_entropy_loss(logits, targets):\n    log_probs = F.log_softmax(logits, dim=-1)\n    return -log_probs.gather(1, targets.unsqueeze(1)).mean()",
+            "function_name": "cross_entropy_loss",
+            "file_path": "losses/classification.py",
+            "paper_url": "https://arxiv.org/abs/1512.00567",
+            "repo_url": "https://github.com/pytorch/pytorch"
+        },
+        {
+            "paper_title": "LoRA Fine-tuning",
+            "code_text": "class LoRA(nn.Module):\n    def __init__(self, weight, rank=8):\n        super().__init__()\n        self.A = nn.Parameter(torch.randn(rank, weight.shape[1]))\n        self.B = nn.Parameter(torch.randn(weight.shape[0], rank))\n        self.weight = weight\n    \n    def forward(self, x):\n        return F.linear(x, self.weight + self.B @ self.A)",
+            "function_name": "LoRA",
+            "file_path": "finetuning/lora.py",
+            "paper_url": "https://arxiv.org/abs/2106.09685",
+            "repo_url": "https://github.com/microsoft/LoRA"
+        },
+        {
+            "paper_title": "Gradient Descent",
+            "code_text": "def gradient_descent_step(params, grads, lr=0.01):\n    for param, grad in zip(params, grads):\n        param.data -= lr * grad",
+            "function_name": "gradient_descent_step",
+            "file_path": "optimizers/gd.py",
+            "paper_url": "https://en.wikipedia.org/wiki/Gradient_descent",
+            "repo_url": "https://github.com/scikit-learn/scikit-learn"
+        },
+        {
+            "paper_title": "Self-Attention",
+            "code_text": "def self_attention(x, W_q, W_k, W_v):\n    Q = x @ W_q\n    K = x @ W_k\n    V = x @ W_v\n    scores = Q @ K.T / math.sqrt(K.shape[-1])\n    attn = F.softmax(scores, dim=-1)\n    return attn @ V",
+            "function_name": "self_attention",
+            "file_path": "attention/self_attn.py",
+            "paper_url": "https://arxiv.org/abs/1706.03762",
+            "repo_url": "https://github.com/huggingface/transformers"
+        },
+        {
+            "paper_title": "Layer Normalization",
+            "code_text": "def layer_norm(x, gamma, beta, eps=1e-5):\n    mean = x.mean(dim=-1, keepdim=True)\n    var = x.var(dim=-1, keepdim=True, unbiased=False)\n    return gamma * (x - mean) / torch.sqrt(var + eps) + beta",
+            "function_name": "layer_norm",
+            "file_path": "normalization/layer_norm.py",
+            "paper_url": "https://arxiv.org/abs/1607.06450",
+            "repo_url": "https://github.com/pytorch/pytorch"
+        },
+        {
+            "paper_title": "ReLU Activation",
+            "code_text": "def relu(x):\n    return torch.maximum(x, torch.zeros_like(x))",
+            "function_name": "relu",
+            "file_path": "activations/relu.py",
+            "paper_url": "https://en.wikipedia.org/wiki/Rectifier_(neural_networks)",
+            "repo_url": "https://github.com/pytorch/pytorch"
         }
-    }
+    ]
+    metadata = dummy_metadata
+    
+    llm = DummyLLM()
+    
+    print(f"Loaded {index.ntotal} code snippets")
 
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 5
 
-class ExplainResponse(BaseModel):
-    """Response model for code explanation"""
-    explanation: str = Field(..., description="Generated explanation")
-    model: str = Field(..., description="Model used for generation")
-    query: str = Field(..., description="Original query")
-    paper_title: str = Field(..., description="Paper title")
+class ExplainRequest(BaseModel):
+    query: str
+    code_snippet: str
+    paper_title: str
+    paper_context: str = ""
 
-
-class HealthResponse(BaseModel):
-    """Health check response"""
-    status: str
-    message: str
-
-
-# API Endpoints
-@app.get("/", response_model=HealthResponse)
-async def root():
-    """Root endpoint with API information"""
-    return {
-        "status": "ok",
-        "message": "ArxivCode Explanation API is running. Visit /docs for API documentation."
-    }
-
-
-@app.get("/health", response_model=HealthResponse)
+@app.get("/")
 async def health_check():
-    """Health check endpoint"""
-    # Verify OpenAI API key is set
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(
-            status_code=500,
-            detail="OPENAI_API_KEY environment variable not set"
-        )
-
     return {
         "status": "healthy",
-        "message": "API is ready to process requests"
+        "total_snippets": index.ntotal if index else 0
     }
 
+@app.post("/search")
+async def search(request: SearchRequest):
+    # Encode query with CodeBERT (same model as document embeddings)
+    query_embedding = encoder.encode(request.query)
+    query_embedding = query_embedding.reshape(1, -1).astype('float32')
+    faiss.normalize_L2(query_embedding)
+    
+    # Search FAISS
+    scores, indices = index.search(query_embedding, request.top_k)
+    
+    # Build results
+    results = []
+    for i, idx in enumerate(indices[0]):
+        if idx < len(metadata):
+            result = metadata[idx].copy()
+            result["score"] = float(scores[0][i])
+            results.append(result)
+    
+    return {"query": request.query, "results": results}
 
-@app.post("/explain", response_model=ExplainResponse)
-async def explain_code(request: ExplainRequest):
-    """
-    Generate an explanation for a code snippet in the context of a research paper.
+@app.post("/explain")
+async def explain(request: ExplainRequest):
+    # Placeholder for LLM integration (Pranati will fill in later)
+    explanation = llm.generate_explanation(
+        query=request.query,
+        code_snippet=request.code_snippet,
+        paper_title=request.paper_title,
+        paper_context=request.paper_context
+    )
+    return {"explanation": explanation}
 
-    Args:
-        request: ExplainRequest with query, code_snippet, paper_title, and optional paper_context
+@app.get("/stats")
+async def stats():
+    return {
+        "total_snippets": index.ntotal if index else 0,
+        "embedding_dim": 768,
+        "model": "microsoft/codebert-base"
+    }
 
-    Returns:
-        ExplainResponse with generated explanation and metadata
-
-    Raises:
-        HTTPException: If explanation generation fails
-    """
-    try:
-        # Check for API key
-        if not os.getenv("OPENAI_API_KEY"):
-            raise HTTPException(
-                status_code=500,
-                detail="OPENAI_API_KEY environment variable not set. Please configure the API key."
-            )
-
-        # Get LLM instance
-        explanation_llm = get_llm()
-
-        # Generate explanation
-        explanation = explanation_llm.generate_explanation(
-            query=request.query,
-            code_snippet=request.code_snippet,
-            paper_title=request.paper_title,
-            paper_context=request.paper_context
-        )
-
-        return {
-            "explanation": explanation,
-            "model": explanation_llm.model,
-            "query": request.query,
-            "paper_title": request.paper_title
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating explanation: {str(e)}"
-        )
-
-
-@app.post("/batch-explain")
-async def batch_explain_code(requests: list[ExplainRequest]):
-    """
-    Generate explanations for multiple code snippets.
-
-    Args:
-        requests: List of ExplainRequest objects
-
-    Returns:
-        List of ExplainResponse objects
-    """
-    try:
-        if not os.getenv("OPENAI_API_KEY"):
-            raise HTTPException(
-                status_code=500,
-                detail="OPENAI_API_KEY environment variable not set"
-            )
-
-        explanation_llm = get_llm()
-
-        # Convert to format expected by batch_explain
-        queries = [
-            {
-                "query": req.query,
-                "code_snippet": req.code_snippet,
-                "paper_title": req.paper_title,
-                "paper_context": req.paper_context
-            }
-            for req in requests
-        ]
-
-        # Generate explanations
-        results = explanation_llm.batch_explain(queries)
-
-        # Format responses
-        responses = [
-            {
-                "explanation": r["explanation"],
-                "model": explanation_llm.model,
-                "query": r["query"],
-                "paper_title": r["paper_title"]
-            }
-            for r in results
-        ]
-
-        return responses
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error in batch explanation: {str(e)}"
-        )
-
-
-# Run with: uvicorn src.api.app:app --reload
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

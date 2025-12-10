@@ -1,6 +1,6 @@
-# ArxivCode!
+# ArXivCode: From Theory to Implementation
+Bridge the gap between AI research and practical implementation. Search for theoretical concepts from papers and get explained code snippets with annotations. 
 
-Machine learning project for paper-code understanding and retrieval. Enables question-answering on research papers using fine-tuned LLMs.
 
 ## Quick Setup
 
@@ -32,17 +32,17 @@ cp .env.example .env
 
 Output: `data/raw/papers/paper_code_pairs.json` (249 papers currently)
 
-### 4. Setup Paper Comprehension Model
+### 4. Setup Models
 
 ```bash
-# Authenticate with Hugging Face
+# Authenticate with Hugging Face (for CodeBERT access)
 huggingface-cli login
 
 # Test model setup
 python tests/test_model_loading.py
 ```
 
-See [Paper Comprehension Model Guide](docs/PAPER_COMPREHENSION_MODEL.md) for training details.
+See [Model Setup Guide](docs/PAPER_COMPREHENSION_MODEL.md) for configuration details.
 
 ## Retrieval System Testing
 
@@ -133,20 +133,11 @@ print("Relevance score:", result['reranked_results'][0]['score'])
 - Validated with strong relevance on ML/AI queries (109 repos, 139 papers)
 - Hardware acceleration: Automatic MPS/CUDA/CPU detection
 
-## Current Status
+## API and Frontend Testing
 
-✅ **Phase 1: Data Collection** (Complete - Days 1-3)
-- ArXiv API integration
-- GitHub repository search
-- Filtering & metadata collection
-- 249 paper-code pairs collected
+Test the complete ArXivCode system with the FastAPI backend and Streamlit frontend:
 
-🔄 **Phase 2: Model Development & Retrieval** (In Progress - Days 4-7)
-- **Code Understanding Model**: CodeBERT/StarCoder-Base with contrastive learning
-- **Paper Comprehension Model**: LLaMA-3/Mistral with QLoRA fine-tuning
-- **Retrieval System**: FAISS indexing with TF-IDF embeddings + cross-encoder re-ranking ✅
-- Dense retrieval pipeline and query testing ✅
-- **Cross-encoder re-ranking pipeline** for relevance scoring ✅
+### Start the Backend API
 
 🔄 **Phase 3: System Integration** (In Progress - Days 8-12)
 - **LLM Explanation API**: FastAPI backend with GPT-4o for code explanations ✅
@@ -155,10 +146,7 @@ print("Relevance score:", result['reranked_results'][0]['score'])
 - Web interface with search functionality
 - End-to-end testing and performance optimization
 
-⏳ **Phase 4: Documentation & Delivery** (Final - Days 13-14)
-- Technical documentation and finalization of README
-- Final report and presentation slides
-- Demo video and deployment instructions
+**Current Status**: API uses dummy data for development. Replace with real CodeBERT embeddings when available from the team.
 
 ## LLM-Based Code Explanation API
 
@@ -201,7 +189,7 @@ See **[LLM_QUICKSTART.md](LLM_QUICKSTART.md)** for a 5-minute setup guide.
 - **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - What was built and how
 - **[Data Collection Guide](docs/DATA_COLLECTION_GUIDE.md)** - Collection pipeline details
 - **[Collection Methods Evaluation](docs/COLLECTION_METHODS_EVALUATION.md)** - Method comparison & rationale
-- **[Paper Comprehension Model](docs/PAPER_COMPREHENSION_MODEL.md)** - Model training & deployment
+- **[Model Setup Guide](docs/PAPER_COMPREHENSION_MODEL.md)** - Model configuration & usage
 
 ## Requirements
 
