@@ -14,6 +14,8 @@ ENV/
 # Data
 data/raw/
 data/processed/
+!data/processed/embeddings/code_embeddings.npy
+!data/processed/embeddings/metadata.json
 data/metadata/
 
 # IDE
