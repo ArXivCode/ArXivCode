@@ -15,14 +15,14 @@ st.markdown("Bridge the gap between AI research and practical implementation. Se
 with st.sidebar:
     st.header("Example Queries")
     examples = [
-        "attention mechanism implementation",
-        "transformer encoder layer",
-        "self-attention pytorch",
-        "LoRA fine-tuning",
-        "gradient descent optimizer",
-        "batch normalization layer",
-        "dropout regularization",
-        "cross-entropy loss function"
+        "how to implement LoRA",
+        "transformer attention mechanism",
+        "BERT fine-tuning",
+        "flash attention",
+        "PPO reinforcement learning",
+        "vision transformer",
+        "knowledge distillation",
+        "prompt tuning"
     ]
     for ex in examples:
         if st.button(ex, key=ex):
