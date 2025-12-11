@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path=project_root / '.env', override=True)
+
 sys.path.insert(0, str(project_root))
 
 from src.retrieval.dense_retrieval import DenseRetrieval
