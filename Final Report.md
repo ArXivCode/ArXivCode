@@ -1,13 +1,11 @@
 # **ArXivCode: Bridging Theory and Implementation in AI Research**
 
-## **Final Project Report \- Outline (8-10 pages)**
-
 **Team:** Nicholas Bindela (njb2163), Pranati Modumudi (pm3361), Tomas Pasiecznik (tp2758)  
  **Course:** COMSE6998-015 Fall 2025
 
 ---
 
-## **Abstract (150 words) - *Needs minor additions***
+## **Abstract**
 
 The gap between theoretical AI research papers and their code implementations creates significant barriers for researchers. Existing tools provide only repository-level linking without semantic search capabilities. We present ArXivCode, a retrieval-augmented generation (RAG) system that bridges this gap by enabling semantic search over code snippets with AI-generated explanations.
 
@@ -102,33 +100,90 @@ User Query → CodeBERT Encoder → Cosine Similarity Search → Top-K Snippets
 
 The system follows a three-stage RAG architecture: (1) dense retrieval using CodeBERT embeddings stored as NumPy arrays with cosine similarity search, (2) optional cross-encoder reranking for improved precision, and (3) GPT-4 explanation generation with paper context.
 
+**Hybrid Retrieval Architecture:**
+
+```
+User Query
+    │
+    ▼
+┌─────────────────────────────────────────────────────┐
+│              Hybrid Retrieval System                │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  1. Semantic Search (60% weight)                   │
+│     - Encode query with CodeBERT                   │
+│     - Cosine similarity against all embeddings     │
+│     - FAISS index for fast nearest neighbor search │
+│                                                     │
+│  2. Keyword Matching (40% weight)                  │
+│     - Function name matching (5x boost)            │
+│     - Paper title matching (4x boost)              │
+│     - Code content matching (3x boost)             │
+│     - Keyword expansion to find additional matches │
+│                                                     │
+│  3. Optional: Cross-Encoder Reranking              │
+│     - MS MARCO MiniLM reranker                     │
+│     - Reranks top candidates for precision         │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+    │
+    ▼
+Ranked Results (top_k snippets with scores)
+```
+
 ### **3.2 Components**
 
 **Data Collection Pipeline**: Collects papers from community-curated "Awesome" GitHub lists (e.g., ML-Papers-of-the-Week, papers-we-love) by parsing markdown files for ArXiv-GitHub pairs. Falls back to a manually curated list of 200+ papers. Clones repositories, extracts Python functions using AST parsing (minimum 50 lines, requires docstrings), and filters test/utility code. Outputs structured JSON with paper metadata and code snippets.
 
 **Embedding Generation**: Uses `microsoft/codebert-base` via SentenceTransformers to encode code snippets. Employs an "enhanced" strategy combining paper title, function name, docstring, and code text. Normalizes embeddings for cosine similarity. Stores embeddings as NumPy arrays (768-dim) with metadata JSON.
 
-**Retrieval System**: `DenseRetrieval` class loads pre-computed embeddings and uses the same CodeBERT model for query encoding. Computes cosine similarity between query and document embeddings. Supports hybrid scoring (60% semantic, 40% keyword matching) and optional cross-encoder reranking. Returns top-K results with scores and metadata.
+**Retrieval System**: `DenseRetrieval` class loads pre-computed embeddings and uses the same CodeBERT model for query encoding. Computes cosine similarity between query and document embeddings. The hybrid retrieval system combines semantic search (60% weight) with keyword matching (40% weight). Semantic search uses CodeBERT embeddings with cosine similarity, optionally leveraging FAISS for fast nearest neighbor search. Keyword matching applies weighted scoring: function name matches (5x boost), paper title matches (4x boost), code content matches (3x boost), with keyword expansion for additional matches. Supports optional cross-encoder reranking using MS MARCO MiniLM. Returns top-K results with scores and metadata.
+
+**Scoring Formula:**
+```python
+final_score = (0.6 * semantic_score) + (0.4 * keyword_score)
+```
 
 **Explanation Module**: `ExplanationLLM` class uses GPT-4o (temperature=0.3) with a structured prompt template. Inputs include user query, code snippet, paper title, and optional paper context. Generates 2-3 sentence explanations identifying the algorithm, paper connection, and implementation details.
 
-**API Layer**: FastAPI backend exposes `/search` and `/explain` endpoints. Loads retrieval system and LLM on startup. Returns JSON with code snippets, metadata, and explanations.
+**API Layer**: FastAPI backend exposes several endpoints:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/` | GET | Health check |
+| `/search` | POST | Execute semantic search |
+| `/explain` | POST | Generate GPT explanation |
+| `/stats` | GET | System statistics |
+
+Loads retrieval system and LLM on startup. Returns JSON with code snippets, metadata, and explanations.
 
 **Frontend Interface**: Streamlit web app connects to FastAPI backend. Provides search interface, result display with code highlighting, explanation generation on demand, and links to papers/repositories.
 
 ### **3.3 Technology Stack**
 
-- **Core**: Python 3.8+, PyTorch, Transformers
-- **Embeddings**: SentenceTransformers, CodeBERT (`microsoft/codebert-base`)
-- **Retrieval**: NumPy arrays (pre-computed embeddings), scikit-learn (cosine similarity), optional FAISS for index building
-- **LLM**: OpenAI API (GPT-4o)
-- **Backend**: FastAPI, Uvicorn
-- **Frontend**: Streamlit
-- **Data Processing**: AST parsing, JSON, subprocess (git clone)
+| Component | Technology |
+|-----------|------------|
+| Embedding Model | Microsoft CodeBERT (768-dim) |
+| Vector Search | FAISS (Facebook AI Similarity Search) / NumPy arrays |
+| Reranker | MS MARCO MiniLM Cross-Encoder |
+| Explanation LLM | OpenAI GPT-4o |
+| Backend API | FastAPI + Uvicorn |
+| Frontend | Streamlit |
+| Language | Python 3.8+ |
+| Core Libraries | PyTorch, Transformers, SentenceTransformers |
+| Data Processing | AST parsing, JSON, subprocess (git clone) |
 
-### **3.4 Critical Design Decision**
+### **3.4 Critical Design Decisions**
 
 **Unified encoder for queries and documents**: Both queries and code snippets are encoded using the same CodeBERT model. This is mathematically required for meaningful similarity search—the embedding space must be shared. Query encoding uses the same normalization and model configuration as document encoding to ensure cosine similarity reflects semantic relevance.
+
+**Hybrid Retrieval**: Pure semantic search missed keyword matches (e.g., "LoRA" function names). Adding 40% keyword weight with function name boosting (5x) dramatically improved relevance. The hybrid approach combines the semantic understanding of CodeBERT with exact term matching for technical concepts.
+
+**Enhanced Embeddings**: Concatenating `paper_title + function_name + code` provides richer semantic context than code alone. This strategy emphasizes searchable identifiers (title, function name) while preserving implementation context, enabling better retrieval of code snippets that relate to paper concepts.
+
+**Data Cleaning**: Reduced dataset from 37K to 2.5K entries by filtering irrelevant snippets (tests, configs, non-paper-related code), improving precision. This quality-over-quantity approach ensures retrieved snippets are actually relevant to paper concepts rather than generic boilerplate code.
+
+**On-Demand Explanations**: GPT calls are made only when users click "Explain" to minimize API costs. This design balances system responsiveness (fast retrieval) with cost efficiency (LLM calls only when needed).
 
 ---
 
@@ -151,6 +206,19 @@ The pipeline collects papers from two sources: (1) Awesome lists scraping (prima
 **Dataset Cleaning**
 
 `clean_dataset.py` removes test files (`*_test.py`, `tests/`), utility files (`utils.py`, `config.py`), and low-quality snippets. Fixes generic "arXiv Query" titles by fetching real metadata. Scores code-paper relevance and filters irrelevant entries. Reduces dataset from ~37,000 raw snippets to ~2,490 cleaned snippets (93.3% reduction).
+
+**Data Files Structure**
+
+```
+data/
+├── processed/
+│   ├── code_snippets_cleaned.json    # 2,490 filtered snippets
+│   └── embeddings_v2/
+│       ├── code_embeddings.npy       # 768-dim vectors (2490 x 768)
+│       └── metadata.json             # Snippet metadata
+└── raw/
+    └── code_repos/                   # Downloaded GitHub repositories
+```
 
 ### **4.2 CodeBERT Embeddings**
 
@@ -178,7 +246,7 @@ Uses the same model and normalization for query encoding. Ensures query and docu
 
 **Retrieval Implementation**
 
-The system uses pre-computed embeddings stored as NumPy arrays rather than building a FAISS index at runtime. `DenseRetrieval` loads `code_embeddings.npy` and `metadata.json` on initialization. Computes cosine similarity using scikit-learn's `cosine_similarity` between query embedding and all document embeddings. Returns top-K indices via `np.argsort`. The FAISS index manager (`faiss_index.py`) exists for potential future use but is not used in the current runtime pipeline.
+The system uses pre-computed embeddings stored as NumPy arrays, with optional FAISS index support for faster similarity search on larger datasets. `DenseRetrieval` loads `code_embeddings.npy` and `metadata.json` on initialization. Computes cosine similarity using scikit-learn's `cosine_similarity` between query embedding and all document embeddings. For faster search, FAISS can be used for approximate nearest neighbor search. Returns top-K indices via `np.argsort`. The FAISS index manager (`faiss_index.py`) supports building and querying FAISS indices for improved scalability.
 
 **Hybrid Scoring**
 
@@ -201,6 +269,23 @@ Structured prompt template with three sections: (1) role definition ("research c
 Uses OpenAI's `gpt-4o` model via `openai` Python client. Parameters: `temperature=0.3` (balanced creativity/consistency), `max_tokens=250` (concise explanations). Handles API errors with try-except and returns user-friendly error messages.
 
 **Cost and Latency**: ~$0.06 per explanation (250 tokens), 2-3 seconds latency including API round-trip. Supports batch processing for multiple explanations.
+
+### **4.5 Request Flow Example**
+
+**Query**: "how to implement LoRA"
+
+1. **Frontend** sends POST to `/search` with query
+2. **API** passes query to `DenseRetrieval.retrieve()`
+3. **Retrieval**:
+   - CodeBERT encodes query → 768-dim vector
+   - FAISS finds top 100 nearest neighbors by cosine similarity
+   - Keyword expansion adds snippets matching "lora" in function names
+   - Hybrid scoring combines semantic (60%) + keyword (40%) scores
+   - Returns top 5 ranked results
+4. **Frontend** displays results; user clicks "Explain"
+5. **API** sends code + query to GPT-4o via `/explain`
+6. **GPT-4o** returns detailed explanation
+7. **Frontend** displays explanation below the code
 
 ---
 
@@ -262,7 +347,7 @@ Uses OpenAI's `gpt-4o` model via `openai` Python client. Parameters: `temperatur
 
 ---
 
-## **6\. Discussion - *Needs minor additions***
+## **6\. Discussion**
 
 ### **6.1 Key Findings**
 
@@ -334,7 +419,7 @@ Beyond individual productivity, ArXivCode contributes to broader goals of resear
 
 ---
 
-## **8\. Conclusion - *Needs minor additions***
+## **8\. Conclusion**
 
 ArXivCode demonstrates that specialized retrieval-augmented generation with pre-trained models effectively bridges the gap between theoretical AI research papers and their code implementations. Through careful system design and integration of CodeBERT embeddings with GPT-4 explanations, we have created a practical tool that addresses a critical need in the research community.
 
