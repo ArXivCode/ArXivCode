@@ -1,7 +1,3 @@
-{
-  "total_papers": 285,
-  "total_qa_pairs": 6650,
-  "train_examples": 5985,
-  "eval_examples": 665,
-  "avg_qa_per_paper": 23.333333333333332
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:30ec5c915f997fa6b5997ce7c9db0d196a87fd63f63d34657d2cff1c1ea64074
+size 143
