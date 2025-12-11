@@ -1,6 +1,44 @@
 # ArXivCode: From Theory to Implementation
-Bridge the gap between AI research and practical implementation. Search for theoretical concepts from papers and get explained code snippets with annotations. 
 
+Bridge the gap between AI research and practical implementation. Search for theoretical concepts from arXiv papers and retrieve relevant code implementations with explanations.
+
+## System Overview
+
+ArXivCode uses **CodeBERT embeddings** with a **hybrid retrieval system** to find relevant code snippets from ML/AI research paper implementations.
+
+### Key Features
+
+- **Custom CodeBERT Embeddings**: 768-dimensional dense vectors generated using Microsoft's CodeBERT model
+- **Hybrid Scoring**: Combines semantic similarity (60%) with keyword matching (40%) for improved relevance
+- **Keyword Expansion**: Boosts function name matches (5x), paper title matches (4x), and code content matches (3x)
+- **2,490 Curated Code Snippets**: Cleaned and filtered from 50+ influential ML papers
+- **Interactive Web Interface**: Streamlit frontend with search, code display, and explanations
+
+## Architecture
+
+```
+User Query
+    │
+    ▼
+┌─────────────────────────────────────────────────────┐
+│              Hybrid Retrieval System                │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  1. Semantic Search (60% weight)                    │
+│     - Encode query with CodeBERT                    │
+│     - Cosine similarity against 2,490 embeddings    │
+│     - FAISS index for fast nearest neighbor search  │
+│                                                     │
+│  2. Keyword Matching (40% weight)                   │
+│     - Function name matching (5x boost)             │
+│     - Paper title matching (4x boost)               │
+│     - Code content matching (3x boost)              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+    │
+    ▼
+Ranked Results → Streamlit UI → User
+```
 
 ## Quick Setup
 
@@ -15,189 +53,162 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure GitHub Token
+### 2. Configure API Keys
 
 ```bash
 cp .env.example .env
-# Edit .env and add your GitHub token
-# Get token at: https://github.com/settings/tokens
+# Edit .env and add your keys:
+# - GITHUB_TOKEN (for data collection)
+# - OPENAI_API_KEY (for explanations)
 ```
 
-### 3. Collect Papers
+### 3. Start the System
 
 ```bash
-# Run complete collection pipeline
-./scripts/collect_papers.sh
+# Activate virtual environment
+source venv/bin/activate
+
+# Terminal 1: Start the API backend
+python -m uvicorn src.api.app:app --host 0.0.0.0 --port 8000
+
+# Terminal 2: Start the Streamlit frontend (in a new terminal)
+source venv/bin/activate
+streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
 ```
 
-Output: `data/raw/papers/paper_code_pairs.json` (249 papers currently)
+Visit http://localhost:8501 to use the web interface.
 
-### 4. Setup Models
+## Embedding Generation
 
-```bash
-# Authenticate with Hugging Face (for CodeBERT access)
-huggingface-cli login
-
-# Test model setup
-python tests/test_model_loading.py
-```
-
-See [Model Setup Guide](docs/PAPER_COMPREHENSION_MODEL.md) for configuration details.
-
-## Retrieval System Testing
-
-The retrieval system uses FAISS for efficient similarity search across paper-code pairs with cross-encoder re-ranking for improved relevance. Test the system by running these commands in order:
-
-```bash
-# 1. Test imports
-python -c "from src.retrieval import FAISSIndexManager, DenseRetrieval, CrossEncoderReranker, RerankingPipeline; print('✅ Imports work!')"
-
-# 2. Test FAISS manager
-python -m src.retrieval.faiss_index
-
-# 3. Build index with real data
-python -m src.retrieval.build_index --input data/raw/papers/paper_code_pairs.json
-
-# 4. Test basic retrieval
-python -m src.retrieval.test_retrieval
-
-# 5. Test enhanced retrieval with re-ranking
-python -m src.retrieval.test_enhanced_retrieval
-```
-
-### Quick Re-ranking Demo
-
-See the improvement in action with a single command:
-
-```bash
-python -c "
-from src.retrieval import DenseRetrieval, RerankingPipeline
-retriever = DenseRetrieval('tfidf')
-retriever.load_index('data/processed/FAISS/faiss_index.index', 'data/processed/FAISS/faiss_metadata.pkl')
-pipeline = RerankingPipeline(retriever, initial_top_k=20, final_top_k=5)
-result = pipeline.retrieve_and_rerank('contrastive learning')
-print('🎯 Top result:', result['reranked_results'][0]['metadata']['paper_title'][:50] + '...')
-print('⭐ Score:', round(result['reranked_results'][0]['score'], 3))
-"
-```
-
-**Expected Output:**
-```
-🎯 Top result: SimCSE: Simple Contrastive Learning of Sentence Em...
-⭐ Score: 5.066
-```
-
-### Cross-Encoder Re-ranking Improvements
-
-The cross-encoder re-ranking significantly improves retrieval relevance. Here's a demonstration:
+We generated custom embeddings using Microsoft's CodeBERT model with an enhanced strategy:
 
 ```python
-from src.retrieval import DenseRetrieval, RerankingPipeline
-
-# Load the system
-retriever = DenseRetrieval(embedding_model_name="tfidf")
-retriever.load_index("data/processed/FAISS/faiss_index.index", "data/processed/FAISS/faiss_metadata.pkl")
-pipeline = RerankingPipeline(retriever, initial_top_k=20, final_top_k=10)
-
-# Test query
-result = pipeline.retrieve_and_rerank("contrastive learning")
-
-print("Top result:", result['reranked_results'][0]['metadata']['paper_title'])
-print("Relevance score:", result['reranked_results'][0]['score'])
-# Output: Top result: SimCSE: Simple Contrastive Learning of Sentence Embeddings...
-#         Relevance score: 5.066
+# Each code snippet is embedded as:
+embedding_text = f"{paper_title} {function_name} {code_text}"
 ```
 
-**Key Improvements Demonstrated:**
-- **Precision Boost**: Cross-encoder achieves perfect matches (e.g., "contrastive learning" → SimCSE paper)
-- **Relevance Discrimination**: Clear score separation (-11.4 to +5.1 range) vs. initial TF-IDF similarity
-- **Smart Re-ranking**: Often promotes highly relevant results from lower initial rankings
-- **Query Understanding**: Better semantic understanding beyond keyword matching
+This combines:
+- **Paper context**: Links code to its research paper
+- **Function name**: Captures the semantic intent of the function
+- **Code content**: The actual implementation
 
-**Performance Metrics:**
-- Tested on 12 ML/AI queries
-- 2.5x result compression ratio (50→20 candidates)
-- Retrieved from 109 unique repositories, 139 unique papers
-- Hardware acceleration: Automatic MPS/CUDA/CPU detection
+### Embedding Statistics
 
-**Index Storage**: `data/processed/FAISS/`
-- `faiss_index.index` - Vector similarity index
-- `faiss_index_vectorizer.pkl` - TF-IDF vectorizer (for CPU-stable embeddings)
-- `faiss_metadata.pkl` - Metadata for retrieved results
+| Metric | Value |
+|--------|-------|
+| Model | microsoft/codebert-base |
+| Embedding Dimension | 768 |
+| Total Snippets | 2,490 |
+| Storage | ~7.3 MB (embeddings) |
+| Index Type | FAISS FlatIP (cosine similarity) |
 
-**Features**:
-- TF-IDF embeddings for stable, CPU-friendly similarity search
-- **Cross-encoder re-ranking** for improved relevance scoring (2.5x precision boost)
-- Repository-level code retrieval with semantic understanding
-- Query filtering by stars, year, and topics
-- Validated with strong relevance on ML/AI queries (109 repos, 139 papers)
-- Hardware acceleration: Automatic MPS/CUDA/CPU detection
+## Data Pipeline
 
-## API and Frontend Testing
-
-Test the complete ArXivCode system with the FastAPI backend and Streamlit frontend:
-
-### Start the Backend API
-
-🔄 **Phase 3: System Integration** (In Progress - Days 8-12)
-- **LLM Explanation API**: FastAPI backend with GPT-4o for code explanations ✅
-- Backend API for model inference and retrieval integration ✅
-- Connect fine-tuned LLM to retrieval results
-- Web interface with search functionality
-- End-to-end testing and performance optimization
-
-**Current Status**: API uses dummy data for development. Replace with real CodeBERT embeddings when available from the team.
-
-## LLM-Based Code Explanation API
-
-ArxivCode now includes an LLM-powered explanation service that generates contextual explanations for code snippets using OpenAI's GPT-4o.
-
-### Quick Start
-
-```bash
-# 1. Install dependencies
-pip install openai fastapi uvicorn pydantic
-
-# 2. Set your OpenAI API key
-export OPENAI_API_KEY="your-key-here"
-
-# 3. Start the API server
-./scripts/start_api.sh
+```
+Papers List → Download Repos → Extract Functions → Clean & Filter → Generate Embeddings
 ```
 
-The API will be available at http://localhost:8000 with interactive docs at http://localhost:8000/docs
+1. **Curated Papers**: Hand-selected influential ML papers (LoRA, BERT, GPT, etc.)
+2. **Code Download**: Clone associated GitHub repositories
+3. **Function Extraction**: Parse Python files to extract functions/classes
+4. **Data Cleaning**: Filter irrelevant code (tests, configs, utilities)
+5. **Embedding Generation**: CodeBERT encodes each snippet
 
-### Example Usage
+### Data Cleaning Results
+
+| Stage | Count | Reduction |
+|-------|-------|-----------|
+| Raw snippets | 37,000+ | - |
+| After cleaning | 2,490 | 93.3% |
+
+Filtering criteria:
+- Remove test files and configuration code
+- Keep only paper-relevant implementations
+- Require meaningful function names
+- Filter out utility/helper code
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Health check |
+| `/search` | POST | Search code snippets |
+| `/explain` | POST | Generate code explanation |
+| `/stats` | GET | System statistics |
+
+### Search Example
 
 ```bash
-curl -X POST http://localhost:8000/explain \
+curl -X POST http://localhost:8000/search \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "contrastive learning",
-    "code_snippet": "def contrastive_loss(z1, z2, temperature=0.5): ...",
-    "paper_title": "SimCLR: A Simple Framework for Contrastive Learning",
-    "paper_context": "Framework for contrastive self-supervised learning"
-  }'
+  -d '{"query": "how to implement LoRA", "top_k": 5}'
 ```
 
-See **[LLM_QUICKSTART.md](LLM_QUICKSTART.md)** for a 5-minute setup guide.
+## Project Structure
 
-## Documentation
+```
+arxivcode/
+├── src/
+│   ├── api/                 # FastAPI backend
+│   │   └── app.py
+│   ├── data_collection/     # Paper & code collection
+│   │   ├── curated_papers_list.py
+│   │   ├── code_downloader.py
+│   │   ├── extract_snippets.py
+│   │   └── clean_dataset.py
+│   ├── embeddings/          # CodeBERT embedding generation
+│   │   ├── code_encoder_model.py
+│   │   └── generate_improved_embeddings.py
+│   ├── retrieval/           # Hybrid retrieval system
+│   │   ├── dense_retrieval.py
+│   │   ├── faiss_index.py
+│   │   └── cross_encoder_reranker.py
+│   └── models/              # LLM explanation
+│       └── explanation_llm.py
+├── frontend/
+│   └── app.py               # Streamlit UI
+├── data/
+│   └── processed/
+│       ├── code_snippets_cleaned.json
+│       └── embeddings_v2/
+│           ├── code_embeddings.npy
+│           └── metadata.json
+└── tests/
+```
 
-- **[LLM Quick Start](LLM_QUICKSTART.md)** - Get started in 5 minutes
-- **[LLM Explanation API](docs/LLM_EXPLANATION_API.md)** - Full API documentation
-- **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - What was built and how
-- **[Data Collection Guide](docs/DATA_COLLECTION_GUIDE.md)** - Collection pipeline details
-- **[Collection Methods Evaluation](docs/COLLECTION_METHODS_EVALUATION.md)** - Method comparison & rationale
-- **[Model Setup Guide](docs/PAPER_COMPREHENSION_MODEL.md)** - Model configuration & usage
+## Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| Embedding Model | Microsoft CodeBERT (768-dim) |
+| Vector Search | FAISS (Facebook AI Similarity Search) |
+| Optional Reranker | MS MARCO MiniLM Cross-Encoder |
+| Backend API | FastAPI + Uvicorn |
+| Frontend | Streamlit |
+| Language | Python 3.11 |
+
+## Example Queries
+
+- "how to implement LoRA"
+- "transformer attention mechanism"
+- "BERT fine-tuning"
+- "flash attention"
+- "PPO reinforcement learning"
+- "vision transformer"
+- "knowledge distillation"
 
 ## Requirements
 
 - Python 3.11 (or 3.9+)
-- 8GB+ RAM (16GB recommended for model training)
+- 8GB+ RAM (16GB recommended)
 - GitHub Personal Access Token (for data collection)
-- Hugging Face account (for model access)
-- OpenAI API key (for LLM explanations)
+- Hugging Face account (for CodeBERT model access)
+
+## Documentation
+
+- [Data Collection Guide](docs/DATA_COLLECTION_GUIDE.md)
+- [Model Setup Guide](docs/PAPER_COMPREHENSION_MODEL.md)
+- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)
 
 ## License
 
