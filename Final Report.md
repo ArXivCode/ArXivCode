@@ -1,7 +1,8 @@
 # **ArXivCode: Bridging Theory and Implementation in AI Research**
 
-**Team:** Nicholas Bindela (njb2163), Pranati Modumudi (pm3361), Tomas Pasiecznik (tp2758)  
- **Course:** COMSE6998-015 Fall 2025
+## **Course:** Introduction to LLM based Generative AI Systems (COMSE6998-015) **Instructors:** Dr. Parijat Dube and Dr. Chen Wang **Date:** December 12, 2025 **Semester:** Fall 2025
+
+## **Project Team:** [Nicholas Julian Bindela](mailto:njb2163@columbia.edu)	UNI: njb2163 [Pranati Modumudi](mailto:pm3361@columbia.edu) 	UNI: pm3361 [Tomas Pasiecznik](mailto:tp2758@columbia.edu)		UNI: tp2758
 
 ---
 
@@ -9,7 +10,7 @@
 
 The gap between theoretical AI research papers and their code implementations creates significant barriers for researchers. Existing tools provide only repository-level linking without semantic search capabilities. We present ArXivCode, a retrieval-augmented generation (RAG) system that bridges this gap by enabling semantic search over code snippets with AI-generated explanations.
 
-Our approach combines CodeBERT embeddings for dense retrieval with GPT-4 for contextual code explanation. We curate a dataset of 249 high-quality ArXiv papers (2020-2025) with associated GitHub repositories, extracting 2,490 function-level code snippets. The system uses pre-trained CodeBERT via SentenceTransformers to encode queries and code into a shared embedding space, enabling cosine similarity search. Optional hybrid scoring (60% semantic, 40% keyword) and cross-encoder reranking improve relevance. GPT-4 generates explanations connecting code to paper concepts.
+Our approach combines CodeBERT embeddings for dense retrieval with GPT-4 (OpenAI, 2024) for contextual code explanation. We curate a dataset of 249 high-quality ArXiv papers (2020-2025) with associated GitHub repositories, extracting 2,490 function-level code snippets. The system uses pre-trained CodeBERT via SentenceTransformers (Reimers & Gurevych, 2019) to encode queries and code into a shared embedding space, enabling a hybrid retrieval scoring method which matches on 60% semantic similarity and 40% keyword similarity. GPT-4 (OpenAI, 2024) generates explanations connecting code to paper concepts.
 
 Evaluation on 23 test queries shows 21.7% fully relevant retrieval accuracy (95.6% including partial matches) with sub-second search times (313ms average). The system accelerates research-to-implementation workflows, improving reproducibility and democratizing access to cutting-edge AI implementations through an interactive web interface.
 
@@ -19,31 +20,30 @@ Evaluation on 23 test queries shows 21.7% fully relevant retrieval accuracy (95.
 
 ### **1.1 Problem and Motivation**
 
-The gap between theoretical AI research and practical implementation creates significant barriers for researchers and practitioners. While ArXiv hosts cutting-edge papers and GitHub contains implementations, discovering and understanding how theoretical concepts translate to actual code remains time-consuming and challenging. Researchers often spend hours manually searching through repositories, reading documentation, and tracing code to find specific implementation details mentioned in papers.
-
-Existing tools like Papers With Code only provide repository-level linking without intelligent semantic search capabilities. GitHub's keyword-based search lacks paper context and cannot understand the semantic relationship between theoretical concepts and their implementations. This disconnect impedes research reproducibility, learning, and practical adoption of new methods, ultimately slowing the pace of AI research advancement.
+The gap between theoretical AI research and practical implementation creates significant barriers for researchers and practitioners. While ArXiv hosts cutting-edge papers and GitHub contains implementations, discovering and understanding how theoretical concepts translate to actual code remains time-consuming and challenging. Researchers often spend hours manually searching through repositories, reading documentation, and tracing code to find specific implementation details mentioned in papers.  
+Existing tools like Papers With Code only provide repository-level linking without intelligent semantic search capabilities. Additionally, Papers With Code was discontinued in 2024 so the solution is no longer viable. GitHub's keyword-based search lacks paper context and cannot understand the semantic relationship between theoretical concepts and their implementations. This disconnect impedes research reproducibility, learning, and practical adoption of new methods, ultimately slowing the pace of AI research advancement.
 
 ### **1.2 Research Questions**
 
 Our research addresses three key questions:
 
-1. **Can we accurately map natural language queries to relevant code snippets?** We investigate whether semantic embeddings can effectively bridge the gap between theoretical descriptions in papers and actual implementation code.
-
-2. **Is pre-trained CodeBERT effective for semantic code search without fine-tuning?** Given computational constraints, we evaluate whether pre-trained models provide sufficient retrieval quality compared to fine-tuned alternatives.
-
+1. **Can we accurately map natural language queries to relevant code snippets?** We investigate whether semantic embeddings can effectively bridge the gap between theoretical descriptions in papers and actual implementation code.  
+     
+2. **Is pre-trained CodeBERT effective for semantic code search without fine-tuning?** Given computational constraints, we evaluate whether pre-trained models provide sufficient retrieval quality compared to fine-tuned alternatives.  
+     
 3. **How well can large language models explain retrieved code in the context of research papers?** We explore whether LLMs can generate meaningful explanations that connect code implementations to their theoretical foundations.
 
 ### **1.3 Contributions**
 
 We present ArXivCode, an end-to-end RAG system that bridges papers and code implementations:
 
-* **Retrieval-Augmented Generation System**: Combines CodeBERT embeddings for dense retrieval with GPT-4 for code explanation, enabling semantic search over code snippets with contextual understanding.
-
-* **Curated Database**: A dataset of 196 high-quality ArXiv papers (2020-2025) with associated GitHub repositories, processed to extract 2,490 code snippets at the function level with paper metadata.
-
-* **Interactive Web Interface**: FastAPI backend with Streamlit frontend providing real-time search, code display, and AI-generated explanations linking implementations to papers.
-
-* **Empirical Evaluation**: Quantitative analysis showing ~75% relevance in retrieval accuracy and sub-second retrieval times, demonstrating practical utility for research workflows.
+* **Retrieval-Augmented Generation System**: Combines CodeBERT embeddings for dense retrieval with GPT-4 (OpenAI, 2024) for code explanation, enabling semantic search over code snippets with contextual understanding.  
+    
+* **Curated Database**: A dataset of 249 high-quality ArXiv papers (2020-2025) with associated GitHub repositories, processed to extract 2,490 code snippets at the function level with paper metadata.  
+    
+* **Interactive Web Interface**: FastAPI backend with Streamlit frontend providing real-time search, code display, and AI-generated explanations linking implementations to papers. Fully deployed web service using Google Cloud Platform, allowing public access to the app.  
+    
+* **Empirical Evaluation**: Quantitative analysis showing \~75% relevance in retrieval accuracy and sub-second retrieval times, demonstrating practical utility for research workflows.
 
 ### **1.4 Scope Evolution**
 
@@ -51,7 +51,7 @@ The project scope evolved significantly from the original proposal based on feas
 
 **Original Plan**: Fine-tuned dual models—a code understanding model (CodeBERT/StarCoder) and a paper comprehension model (LLaMA/Mistral) trained on paper-code pairs with contrastive learning and instruction fine-tuning.
 
-**Pivot to RAG**: Shifted to a retrieval-augmented generation approach using pre-trained CodeBERT for embeddings and GPT-4 for explanations. This decision was driven by the requirement that fine-tuned dual models would need extensive manual tagging of paper-to-code pairs at fine-grained levels (paragraph-to-function alignments), which was infeasible to scale within the project timeline. The RAG approach prioritized system integration and end-to-end functionality over model training, enabling faster iteration and more reliable results without requiring labor-intensive annotation.
+**Pivot to RAG**: Shifted to a retrieval-augmented generation approach using pre-trained CodeBERT for embeddings and GPT-4 (OpenAI, 2024) for explanations. This decision was driven by the requirement that fine-tuned dual models would need extensive manual tagging of paper-to-code pairs at fine-grained levels (paragraph-to-function alignments), which was infeasible to scale within the project timeline. The RAG approach prioritized system integration and end-to-end functionality over model training, enabling faster iteration and more reliable results without requiring labor-intensive annotation.
 
 **Final Focus**: Emphasis on building a complete, working system with pre-trained models rather than training custom models. This approach proved more practical given time constraints and achieved strong performance through careful system design and prompt engineering.
 
@@ -63,7 +63,7 @@ The project scope evolved significantly from the original proposal based on feas
 
 ### **2.1 Code Understanding**
 
-**CodeBERT** (Feng et al., 2020): Pre-trained bidirectional encoder on code-text pairs, producing 768-dimensional embeddings. Trained on 6.4M code-text pairs from GitHub, CodeBERT learns joint representations of natural language and programming language. We use CodeBERT via SentenceTransformers to encode both queries and code snippets into a shared embedding space, enabling semantic similarity search without fine-tuning.
+**CodeBERT** (Feng et al., 2020): Pre-trained bidirectional encoder on code-text pairs, producing 768-dimensional embeddings. Trained on 6.4M code-text pairs from GitHub, CodeBERT learns joint representations of natural language and programming language. We use CodeBERT via SentenceTransformers (Reimers & Gurevych, 2019) to encode both queries and code snippets into a shared embedding space, enabling semantic similarity search without fine-tuning.
 
 **GraphCodeBERT** (Guo et al., 2021): Extends CodeBERT with data flow graphs for structure-aware code understanding. While more expressive, it adds complexity and computational overhead. We chose CodeBERT for its proven effectiveness and simplicity.
 
@@ -71,9 +71,9 @@ The project scope evolved significantly from the original proposal based on feas
 
 ### **2.2 Retrieval and RAG Systems**
 
-**RAG** (Lewis et al., 2020): Retrieval-augmented generation framework that combines dense retrieval with language model generation. Our system follows this architecture: retrieve relevant code snippets using CodeBERT embeddings, then generate explanations using GPT-4 with retrieved context.
+**RAG** (Lewis et al., 2020): Retrieval-augmented generation framework that combines dense retrieval with language model generation. Our system follows this architecture: retrieve relevant code snippets using CodeBERT embeddings, then generate explanations using GPT-4 (OpenAI, 2024) with retrieved context.
 
-**Dense Passage Retrieval** (Karpukhin et al., 2020): Demonstrates that dense embeddings outperform sparse (BM25) retrieval for open-domain question answering. We apply dense retrieval using CodeBERT embeddings with cosine similarity, computing query-document similarities over pre-computed code embeddings stored as NumPy arrays.
+**Dense Passage Retrieval** (Karpukhin et al., 2020): Demonstrates that dense embeddings outperform sparse (BM25) retrieval for open-domain question answering. We apply dense retrieval using CodeBERT embeddings with cosine similarity, computing query-document similarities over pre-computed code embeddings stored as NumPy arrays (Harris et al., 2020).
 
 **Cross-Encoder Re-ranking** (Hofstätter et al., 2021): Uses cross-encoder models to score query-document pairs for improved precision. We optionally employ `cross-encoder/ms-marco-MiniLM-L-6-v2` to re-rank top candidates from initial dense retrieval, improving relevance at the cost of additional latency.
 
@@ -83,10 +83,9 @@ The project scope evolved significantly from the original proposal based on feas
 
 **GitHub Search**: Keyword-based search that cannot understand semantic relationships between queries and code. No integration with paper context or theoretical concepts.
 
-**GPT-4 Zero-Shot**: Can generate code explanations but often hallucinates implementation details not present in actual repositories. Lacks grounding in verified code implementations.
+**GPT-4 Zero-Shot** (OpenAI, 2024): Can generate code explanations but often hallucinates implementation details not present in actual repositories. Lacks grounding in verified code implementations. Zero-Shot here means that GPT-4 is only relying on its training data and not retrieving code snippets from our curated dataset.
 
-*Our advancement: Function-level semantic search with verified code snippets and AI-generated explanations that connect implementations to their theoretical foundations.*
-
+*Our advancement: Function-level semantic search with verified code snippets and AI-generated explanations that connect implementations to their theoretical foundations.*  
 ---
 
 ## **3\. System Architecture**
@@ -94,11 +93,11 @@ The project scope evolved significantly from the original proposal based on feas
 ### **3.1 Pipeline Overview**
 
 ```
-User Query → CodeBERT Encoder → Cosine Similarity Search → Top-K Snippets 
+User Query → CodeBERT Encoder → Hybrid Similarity Search → Top-K Snippets 
 → GPT-4 + Paper Context → Explanation + Code
 ```
 
-The system follows a three-stage RAG architecture: (1) dense retrieval using CodeBERT embeddings stored as NumPy arrays with cosine similarity search, (2) optional cross-encoder reranking for improved precision, and (3) GPT-4 explanation generation with paper context.
+The system follows a three-stage RAG architecture: (1) dense retrieval using CodeBERT embeddings stored as NumPy arrays (Harris et al., 2020) with our custom hybrid similarity search, (2) optional cross-encoder reranking for improved precision, and (3) GPT-4 (OpenAI, 2024) explanation generation with paper context.
 
 **Hybrid Retrieval Architecture:**
 
@@ -106,26 +105,26 @@ The system follows a three-stage RAG architecture: (1) dense retrieval using Cod
 User Query
     │
     ▼
-┌─────────────────────────────────────────────────────┐
+┌────────────────────────────────┐
 │              Hybrid Retrieval System                │
-├─────────────────────────────────────────────────────┤
+├────────────────────────────────┤
 │                                                     │
-│  1. Semantic Search (60% weight)                   │
-│     - Encode query with CodeBERT                   │
-│     - Cosine similarity against all embeddings     │
-│     - FAISS index for fast nearest neighbor search │
+│  1. Semantic Search (60% weight)                    │
+│     - Encode query with CodeBERT                    │
+│     - Cosine similarity against all embeddings      │
+│     - FAISS index for fast nearest neighbor search  │
 │                                                     │
-│  2. Keyword Matching (40% weight)                  │
-│     - Function name matching (5x boost)            │
-│     - Paper title matching (4x boost)              │
-│     - Code content matching (3x boost)             │
-│     - Keyword expansion to find additional matches │
+│  2. Keyword Matching (40% weight)                   │
+│     - Function name matching (5x boost)             │
+│     - Paper title matching (4x boost)               │
+│     - Code content matching (3x boost)              │
+│     - Keyword expansion to find additional matches  │
 │                                                     │
-│  3. Optional: Cross-Encoder Reranking              │
-│     - MS MARCO MiniLM reranker                     │
-│     - Reranks top candidates for precision         │
+│  3. Optional: Cross-Encoder Reranking               │
+│     - MS MARCO MiniLM reranker                      │
+│     - Reranks top candidates for precision          │
 │                                                     │
-└─────────────────────────────────────────────────────┘
+└────────────────────────────────┘
     │
     ▼
 Ranked Results (top_k snippets with scores)
@@ -135,21 +134,22 @@ Ranked Results (top_k snippets with scores)
 
 **Data Collection Pipeline**: Collects papers from community-curated "Awesome" GitHub lists (e.g., ML-Papers-of-the-Week, papers-we-love) by parsing markdown files for ArXiv-GitHub pairs. Falls back to a manually curated list of 200+ papers. Clones repositories, extracts Python functions using AST parsing (minimum 50 lines, requires docstrings), and filters test/utility code. Outputs structured JSON with paper metadata and code snippets.
 
-**Embedding Generation**: Uses `microsoft/codebert-base` via SentenceTransformers to encode code snippets. Employs an "enhanced" strategy combining paper title, function name, docstring, and code text. Normalizes embeddings for cosine similarity. Stores embeddings as NumPy arrays (768-dim) with metadata JSON.
+**Embedding Generation**: Uses `microsoft/codebert-base` via SentenceTransformers (Reimers & Gurevych, 2019) to encode code snippets. Employs an "enhanced" strategy combining paper title, function name, docstring, and code text. Normalizes embeddings for cosine similarity. Stores embeddings as NumPy arrays (Harris et al., 2020) (768-dim) with metadata JSON.
 
-**Retrieval System**: `DenseRetrieval` class loads pre-computed embeddings and uses the same CodeBERT model for query encoding. Computes cosine similarity between query and document embeddings. The hybrid retrieval system combines semantic search (60% weight) with keyword matching (40% weight). Semantic search uses CodeBERT embeddings with cosine similarity, optionally leveraging FAISS for fast nearest neighbor search. Keyword matching applies weighted scoring: function name matches (5x boost), paper title matches (4x boost), code content matches (3x boost), with keyword expansion for additional matches. Supports optional cross-encoder reranking using MS MARCO MiniLM. Returns top-K results with scores and metadata.
+**Retrieval System**: `DenseRetrieval` class loads pre-computed embeddings and uses the same CodeBERT model for query encoding. Computes hybrid similarity between query and document embeddings. The hybrid retrieval system combines semantic search (60% weight) with keyword matching (40% weight). Keyword matching applies weighted scoring: function name matches (5x boost), paper title matches (4x boost), code content matches (3x boost), with keyword expansion for additional matches. Supports optional cross-encoder reranking using MS MARCO MiniLM. Returns top-K results with scores and metadata.
 
 **Scoring Formula:**
-```python
+
+```py
 final_score = (0.6 * semantic_score) + (0.4 * keyword_score)
 ```
 
-**Explanation Module**: `ExplanationLLM` class uses GPT-4o (temperature=0.3) with a structured prompt template. Inputs include user query, code snippet, paper title, and optional paper context. Generates 2-3 sentence explanations identifying the algorithm, paper connection, and implementation details.
+**Explanation Module**: `ExplanationLLM` class uses GPT-4o (OpenAI, 2024) (temperature=0.3) with a structured prompt template. Inputs include user query, code snippet, paper title, and optional paper context. Generates 2-3 sentence explanations identifying the algorithm, paper connection, and implementation details.
 
 **API Layer**: FastAPI backend exposes several endpoints:
 
 | Endpoint | Method | Purpose |
-|----------|--------|---------|
+| :---: | :---: | ----- |
 | `/` | GET | Health check |
 | `/search` | POST | Execute semantic search |
 | `/explain` | POST | Generate GPT explanation |
@@ -162,12 +162,12 @@ Loads retrieval system and LLM on startup. Returns JSON with code snippets, meta
 ### **3.3 Technology Stack**
 
 | Component | Technology |
-|-----------|------------|
+| :---: | ----- |
 | Embedding Model | Microsoft CodeBERT (768-dim) |
-| Vector Search | FAISS (Facebook AI Similarity Search) / NumPy arrays |
+| Vector Search | FAISS (Facebook AI Similarity Search) / NumPy arrays (Harris et al., 2020) |
 | Reranker | MS MARCO MiniLM Cross-Encoder |
-| Explanation LLM | OpenAI GPT-4o |
-| Backend API | FastAPI + Uvicorn |
+| Explanation LLM | OpenAI GPT-4o (OpenAI, 2024) |
+| Backend API | FastAPI \+ Uvicorn |
 | Frontend | Streamlit |
 | Language | Python 3.8+ |
 | Core Libraries | PyTorch, Transformers, SentenceTransformers |
@@ -205,7 +205,7 @@ The pipeline collects papers from two sources: (1) Awesome lists scraping (prima
 
 **Dataset Cleaning**
 
-`clean_dataset.py` removes test files (`*_test.py`, `tests/`), utility files (`utils.py`, `config.py`), and low-quality snippets. Fixes generic "arXiv Query" titles by fetching real metadata. Scores code-paper relevance and filters irrelevant entries. Reduces dataset from ~37,000 raw snippets to ~2,490 cleaned snippets (93.3% reduction).
+`clean_dataset.py` removes test files (`*_test.py`, `tests/`), utility files (`utils.py`, `config.py`), and low-quality snippets. Fixes generic "arXiv Query" titles by fetching real metadata. Scores code-paper relevance and filters irrelevant entries. Reduces dataset from \~37,000 raw snippets to \~2,490 cleaned snippets (93.3% reduction).
 
 **Data Files Structure**
 
@@ -224,7 +224,7 @@ data/
 
 **Embedding Strategy**
 
-Uses SentenceTransformers wrapper around `microsoft/codebert-base`. Implements "enhanced" strategy that combines: paper title, function name (with readable formatting), docstring, abstract snippet, and code text (truncated to 1000 chars). This strategy emphasizes searchable identifiers (title, function name) while preserving implementation context.
+Uses SentenceTransformers (Reimers & Gurevych, 2019) wrapper around `microsoft/codebert-base`. Implements an "enhanced" strategy that combines: paper title, function name (with readable formatting), docstring, abstract snippet, and code text (truncated to 1000 chars). This strategy emphasizes searchable identifiers (title, function name) while preserving implementation context.
 
 **Generation Process**
 
@@ -236,7 +236,7 @@ texts = [create_embedding_text(entry, strategy='enhanced') for entry in data]
 embeddings = model.encode(texts, batch_size=32, normalize_embeddings=True)
 ```
 
-Normalizes embeddings for cosine similarity. Processes in batches of 32. Outputs `code_embeddings.npy` (N x 768 float32 array) and `metadata.json` with paper/function metadata. For 2,490 snippets, generates ~7.3 MB of embeddings.
+Normalizes embeddings for cosine similarity. Processes in batches of 32\. Outputs `code_embeddings.npy` (N x 768 float32 array) and `metadata.json` with paper/function metadata. For 2,490 snippets, generates \~7.3 MB of embeddings.
 
 **Query Encoding**
 
@@ -246,17 +246,17 @@ Uses the same model and normalization for query encoding. Ensures query and docu
 
 **Retrieval Implementation**
 
-The system uses pre-computed embeddings stored as NumPy arrays, with optional FAISS index support for faster similarity search on larger datasets. `DenseRetrieval` loads `code_embeddings.npy` and `metadata.json` on initialization. Computes cosine similarity using scikit-learn's `cosine_similarity` between query embedding and all document embeddings. For faster search, FAISS can be used for approximate nearest neighbor search. Returns top-K indices via `np.argsort`. The FAISS index manager (`faiss_index.py`) supports building and querying FAISS indices for improved scalability.
+The system uses pre-computed embeddings stored as NumPy arrays (Harris et al., 2020), with optional FAISS index support for faster similarity search on larger datasets. `DenseRetrieval` loads `code_embeddings.npy` and `metadata.json` on initialization. Computes cosine similarity using scikit-learn's `cosine_similarity` (Pedregosa et al., 2011) between query embedding and all document embeddings. For faster search, FAISS can be used for approximate nearest neighbor search. Returns top-K indices via `np.argsort`. The FAISS index manager (`faiss_index.py`) supports building and querying FAISS indices for improved scalability.
 
 **Hybrid Scoring**
 
-Optional hybrid scoring combines semantic similarity (60%) with keyword matching (40%). Keyword scoring weights: function name matches (5x), title matches (4x), code matches (3x), abstract matches (2x). Bonus multiplier applied when all keywords found in code. This helps surface exact technical term matches that may have lower semantic scores.
+Hybrid scoring combines semantic similarity (60%) with keyword matching (40%). Keyword scoring weights: function name matches (5x), title matches (4x), code matches (3x), abstract matches (2x). Bonus multiplier applied when all keywords found in code. This helps surface exact technical term matches that may have lower semantic scores.
 
 **Reranking**
 
-Optional cross-encoder reranker (`CrossEncoderReranker`) uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to score query-code pairs. Applied to top candidates (top-K * 10 when reranking enabled, top-K * 5 otherwise) before final selection. Improves precision but adds latency.
+Optional cross-encoder reranker (`CrossEncoderReranker`) uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to score query-code pairs. Applied to top candidates (top-K \* 10 when reranking enabled, top-K \* 5 otherwise) before final selection. Improves precision but adds latency.
 
-**Performance**: Query encoding: ~50ms, similarity computation: ~20ms, total retrieval: <100ms for top-5 results.
+**Performance**: Query encoding: \~50ms, similarity computation: \~20ms, total retrieval: \<100ms for top-5 results.
 
 ### **4.4 LLM Explanation**
 
@@ -266,25 +266,25 @@ Structured prompt template with three sections: (1) role definition ("research c
 
 **API Integration**
 
-Uses OpenAI's `gpt-4o` model via `openai` Python client. Parameters: `temperature=0.3` (balanced creativity/consistency), `max_tokens=250` (concise explanations). Handles API errors with try-except and returns user-friendly error messages.
+Uses OpenAI's `gpt-4o` model (OpenAI, 2024) via `openai` Python client. Parameters: `temperature=0.3` (balanced creativity/consistency), `max_tokens=250` (concise explanations). Handles API errors with try-except and returns user-friendly error messages.
 
-**Cost and Latency**: ~$0.06 per explanation (250 tokens), 2-3 seconds latency including API round-trip. Supports batch processing for multiple explanations.
+**Cost and Latency**: \~$0.06 per explanation (250 tokens), 2-3 seconds latency including API round-trip. Supports batch processing for multiple explanations.
 
 ### **4.5 Request Flow Example**
 
 **Query**: "how to implement LoRA"
 
-1. **Frontend** sends POST to `/search` with query
-2. **API** passes query to `DenseRetrieval.retrieve()`
-3. **Retrieval**:
-   - CodeBERT encodes query → 768-dim vector
-   - FAISS finds top 100 nearest neighbors by cosine similarity
-   - Keyword expansion adds snippets matching "lora" in function names
-   - Hybrid scoring combines semantic (60%) + keyword (40%) scores
-   - Returns top 5 ranked results
-4. **Frontend** displays results; user clicks "Explain"
-5. **API** sends code + query to GPT-4o via `/explain`
-6. **GPT-4o** returns detailed explanation
+1. **Frontend** sends POST to `/search` with query  
+2. **API** passes query to `DenseRetrieval.retrieve()`  
+3. **Retrieval**:  
+   - CodeBERT encodes query → 768-dim vector  
+   - FAISS finds top 100 nearest neighbors by cosine similarity  
+   - Keyword expansion adds snippets matching "lora" in function names  
+   - Hybrid scoring combines semantic (60%) \+ keyword (40%) scores  
+   - Returns top 5 ranked results  
+4. **Frontend** displays results; user clicks "Explain"  
+5. **API** sends code \+ query to GPT-4o via `/explain`  
+6. **GPT-4o** returns detailed explanation  
 7. **Frontend** displays explanation below the code
 
 ---
@@ -296,20 +296,37 @@ Uses OpenAI's `gpt-4o` model via `openai` Python client. Parameters: `temperatur
 **Table 1: Metrics**
 
 | Metric | Value |
-| ----- | ----- |
-| Papers indexed | 196 |
+| :---: | :---: |
+| Papers indexed | 249 |
 | Code snippets | 2,490 |
 | Retrieval time | \<0.31s |
 | Explanation time | 2-3s |
 
 ### **5.2 Retrieval Accuracy (23 test queries)**
 
+We evaluated retrieval accuracy using a three-tier relevance classification:
+
+* **Fully Relevant**: Retrieved code snippets that closely match the query with high semantic similarity (score \> 0.7) and strong keyword alignment (\>50% of query keywords appear in function name, paper title, or code). These results directly address the user's query.  
+    
+* **Partially Relevant**: Retrieved code snippets that are related to the query with moderate semantic similarity (score \> 0.5) and some keyword matches (\>30% of query keywords). These results are tangentially related but may not be the exact implementation sought.  
+    
+* **Not Relevant**: Retrieved code snippets with low semantic similarity or minimal keyword matches that do not meaningfully address the query.
+
+We evaluated retrieval accuracy across three query categories:
+
+* **Architecture queries** (8 queries): Focus on model structure and components (e.g., "multi-head attention", "transformer encoder", "residual connections", "layer normalization"). These queries seek code that implements specific architectural elements.  
+    
+* **Implementation queries** (10 queries): Focus on how to implement specific techniques or training procedures (e.g., "how to implement LoRA", "learning rate schedule", "gradient clipping", "fine-tuning BERT"). These queries seek practical implementation code.  
+    
+* **Conceptual queries** (5 queries): Focus on "why" questions and explanations (e.g., "why use layer norm", "attention mechanism explanation"). These queries are more challenging as they seek reasoning about design choices rather than code.
+
 **Table 2: Accuracy by Query Type**
 
 | Type | Relevant % | Partial % | Not Relevant % |
-| ----- | ----- | ----- | ----- |
+| :---: | :---: | :---: | :---: |
 | Architecture | 0.0% | 87.5% | 12.5% |
 | Implementation | 50.0% | 50.0% | 0.0% |
+| Conceptual | 0.0% | 100.0% | 0.0% |
 | Overall | **21.7%** | **73.9%** | **4.3%** |
 
 ### **5.3 Case Studies (3 examples)**
@@ -332,18 +349,23 @@ Uses OpenAI's `gpt-4o` model via `openai` Python client. Parameters: `temperatur
 **Table 3: System Comparison**
 
 | System | Time | Accuracy | Notes |
-| ----- | ----- | ----- | ----- |
+| :---: | :---: | :---: | ----- |
 | **ArXivCode** | **\<0.31s** | **\~75%** | Fast \+ semantic |
 | Manual GitHub | 15-20 min | 100% | Slow |
-| GPT-4 Zero-Shot | 30s | 60% | Hallucinates |
-| GitHub Search | 5-10 min | 50% | Keyword only |
+| GPT-4 Zero-Shot | 30s | N/A | Hallucinates |
+| GitHub Search | 5-10 min | N/A | Keyword only |
 
 ### **5.5 Error Analysis**
 
-* **Query ambiguity** (4.3%): "learning rate schedule" → multiple types (warmup, decay, cyclic)  
-* **Missing papers** (0.0%): All test queries found results in 196-paper dataset  
-* **Code complexity** (0.0%): Optimized/obfuscated code (not observed in test set)  
-* **Conceptual gap** (8.7%): "Why" questions vs implementation (e.g., "why use layer norm")
+We analyzed potential sources of retrieval limitations across the 23 test queries. The percentages below represent the proportion of test queries affected by each error type (note: categories are not mutually exclusive):
+
+* **Query ambiguity** (4.3%, 1 query): Queries with multiple valid interpretations that lead to mixed results. Example: "learning rate schedule" could refer to warmup, decay, or cyclic schedules, resulting in partial matches to different implementations.  
+    
+* **Missing papers** (0.0%, 0 queries): Queries for which no relevant code was found in the 249-paper dataset. All test queries successfully retrieved at least one result, indicating good coverage for the evaluated queries.  
+    
+* **Code complexity** (0.0%, 0 queries): Queries where retrieved code was too optimized or obfuscated to be useful. No such cases were observed in the test set, suggesting the dataset cleaning process effectively filtered out overly complex code.  
+    
+* **Conceptual gap** (8.7%, 2 queries): Queries asking "why" or seeking explanations rather than implementation code. Examples include "why use layer norm" and "why residual connections work". These queries retrieve related code but cannot provide theoretical motivation, representing a limitation of code-focused retrieval for conceptual questions.
 
 ---
 
@@ -357,7 +379,7 @@ Our evaluation reveals several important insights about building effective paper
 
 **Unified encoding is critical for meaningful similarity search.** Using the same CodeBERT model for both query and document encoding ensures embeddings exist in a shared semantic space. This mathematical requirement is fundamental: cosine similarity between embeddings only reflects semantic relevance when both are produced by the same encoder with identical normalization. Our experiments confirm that mismatched encoders (e.g., different models or normalization strategies) degrade retrieval quality significantly.
 
-**RAG effectively combines retrieval speed with LLM flexibility.** The two-stage architecture—dense retrieval followed by generative explanation—leverages the strengths of each component. Dense retrieval provides sub-second search over thousands of snippets, while GPT-4 adds contextual understanding that pure retrieval cannot achieve. This combination enables both fast discovery and nuanced explanation, addressing different aspects of the paper-code understanding problem.
+**RAG effectively combines retrieval speed with LLM flexibility.** The two-stage architecture—dense retrieval followed by generative explanation—leverages the strengths of each component. Dense retrieval provides sub-second search over thousands of snippets, while GPT-4 (OpenAI, 2024) adds contextual understanding that pure retrieval cannot achieve. This combination enables both fast discovery and nuanced explanation, addressing different aspects of the paper-code understanding problem.
 
 **Data quality outweighs quantity in specialized domains.** Our curated dataset of 196 papers with 2,490 code snippets achieves 21.7% fully relevant accuracy (95.6% including partial matches), demonstrating that careful selection and cleaning produce better results than larger but noisier datasets. Filtering for high-quality implementations (minimum 50 stars, docstrings required, test/utility code removed) ensures retrieved snippets are actually relevant to paper concepts, rather than generic boilerplate code.
 
@@ -389,7 +411,7 @@ Beyond individual productivity, ArXivCode contributes to broader goals of resear
 
 ## **7\. Future Work**
 
-### **7.1 Short-term Enhancements (3-6 months)**
+### **7.1 Short-term Enhancements** 
 
 **Dataset Expansion**: Scale from 249 to 1000+ papers by automating the collection pipeline. Integrate additional data sources beyond Awesome lists, such as direct Papers With Code API integration (when available) and conference proceedings. Expand coverage to include more recent papers (2024-2025) and additional domains beyond ML/NLP.
 
@@ -397,7 +419,7 @@ Beyond individual productivity, ArXivCode contributes to broader goals of resear
 
 **Enhanced Retrieval**: Implement FAISS index at runtime for faster similarity search on larger datasets. Integrate cross-encoder reranking as a default option with optimized batching. Develop query expansion techniques to handle ambiguous queries and improve recall.
 
-### **7.2 Medium-term Improvements (6-12 months)**
+### **7.2 Medium-term Improvements** 
 
 **Fine-tuned Models**: Develop automated or semi-automated methods for generating paper-code alignments (e.g., using LLMs to identify relevant code sections from paper text). Fine-tune CodeBERT using contrastive learning on these alignments to improve domain-specific retrieval precision. This addresses the limitation identified in scope evolution.
 
@@ -407,7 +429,7 @@ Beyond individual productivity, ArXivCode contributes to broader goals of resear
 
 **Platform Development**: Build a community-driven platform where researchers can contribute paper-code pairs, improving dataset quality through crowdsourcing. Add version tracking to handle repository updates automatically, addressing the static dataset limitation.
 
-### **7.3 Long-term Vision (1+ years)**
+### **7.3 Long-term Vision** 
 
 **Automated Paper-Code Alignment**: Develop ML models that automatically identify code sections corresponding to specific paper paragraphs or algorithms. Use techniques from document alignment and code summarization to create fine-grained mappings without manual annotation.
 
@@ -421,7 +443,7 @@ Beyond individual productivity, ArXivCode contributes to broader goals of resear
 
 ## **8\. Conclusion**
 
-ArXivCode demonstrates that specialized retrieval-augmented generation with pre-trained models effectively bridges the gap between theoretical AI research papers and their code implementations. Through careful system design and integration of CodeBERT embeddings with GPT-4 explanations, we have created a practical tool that addresses a critical need in the research community.
+ArXivCode demonstrates that specialized retrieval-augmented generation with pre-trained models effectively bridges the gap between theoretical AI research papers and their code implementations. Through careful system design and integration of CodeBERT embeddings with GPT-4 (OpenAI, 2024) explanations, we have created a practical tool that addresses a critical need in the research community.
 
 ### **Key Achievements**
 
@@ -445,28 +467,22 @@ While the current system demonstrates strong performance with pre-trained models
 
 ## **References**
 
-1. Feng, Z., Guo, D., Tang, D., Duan, N., Feng, M., Gong, M., Shou, L., Qin, B., Liu, T., Jiang, D., & Zhou, M. (2020). CodeBERT: A Pre-Trained Model for Programming and Natural Languages. *Proceedings of EMNLP 2020*.
-
-2. Guo, D., Ren, S., Lu, S., Feng, Z., Tang, D., Liu, S., Zhou, L., Duan, N., Svyatkovskiy, A., Fu, S., Tufano, M., Deng, S. K., Clement, C., Drain, D., Sundaresan, N., Yin, J., Jiang, D., & Zhou, M. (2021). GraphCodeBERT: Pre-training Code Representations with Data Flow. *Proceedings of ICLR 2021*.
-
-3. Li, R., Allal, L. B., Zi, Y., Muennighoff, N., Kocetkov, D., Mou, C., Marone, M., Akiki, C., Li, J., Chim, J., Liu, Q., Zheltonozhskii, E., Zhuo, T. Y., Wang, T., Dehaene, O., Lamy-Poirier, M., Stadler, J., Mishchenko, G., Yu, J., ... & Lopes, C. V. (2023). StarCoder: May the source be with you! *arXiv preprint arXiv:2305.06161*.
-
-4. Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W. T., Rocktäschel, T., Riedel, S., & Ranzato, M. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 9459-9474.
-
-5. Karpukhin, V., Oguz, B., Min, S., Lewis, P., Wu, L., Edunov, S., Chen, D., & Yih, W. T. (2020). Dense Passage Retrieval for Open-Domain Question Answering. *Proceedings of EMNLP 2020*, 6769-6781.
-
-6. Hofstätter, S., Lin, S. C., Yang, J. H., Hanbury, A., & Reimers, N. (2021). Efficiently Teaching an Effective Dense Retriever with Balanced Topic Aware Sampling. *Proceedings of SIGIR 2021*, 113-122.
-
-7. Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. *Proceedings of EMNLP-IJCNLP 2019*, 3982-3992.
-
-8. OpenAI. (2024). GPT-4 Technical Report. *arXiv preprint arXiv:2303.08774*.
-
-9. Papers With Code. (2024). Papers With Code: The latest in machine learning. https://paperswithcode.com
-
-10. Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, E. (2011). Scikit-learn: Machine Learning in Python. *Journal of Machine Learning Research*, 12, 2825-2830.
-
-11. Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P., Cournapeau, D., Wieser, E., Taylor, J., Berg, S., Smith, N. J., Kern, R., Picus, M., Hoyer, S., van Kerkwijk, M. H., Brett, M., Haldane, A., del Río, J. F., Wiebe, M., Peterson, P., ... & Oliphant, T. E. (2020). Array programming with NumPy. *Nature*, 585(7825), 357-362.
-
----
-
-
+1. Feng, Z., Guo, D., Tang, D., Duan, N., Feng, M., Gong, M., Shou, L., Qin, B., Liu, T., Jiang, D., & Zhou, M. (2020). CodeBERT: A Pre-Trained Model for Programming and Natural Languages. *Proceedings of EMNLP 2020*.  
+     
+2. Guo, D., Ren, S., Lu, S., Feng, Z., Tang, D., Liu, S., Zhou, L., Duan, N., Svyatkovskiy, A., Fu, S., Tufano, M., Deng, S. K., Clement, C., Drain, D., Sundaresan, N., Yin, J., Jiang, D., & Zhou, M. (2021). GraphCodeBERT: Pre-training Code Representations with Data Flow. *Proceedings of ICLR 2021*.  
+     
+3. Li, R., Allal, L. B., Zi, Y., Muennighoff, N., Kocetkov, D., Mou, C., Marone, M., Akiki, C., Li, J., Chim, J., Liu, Q., Zheltonozhskii, E., Zhuo, T. Y., Wang, T., Dehaene, O., Lamy-Poirier, M., Stadler, J., Mishchenko, G., Yu, J., ... & Lopes, C. V. (2023). StarCoder: May the source be with you\! *arXiv preprint arXiv:2305.06161*.  
+     
+4. Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W. T., Rocktäschel, T., Riedel, S., & Ranzato, M. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 9459-9474.  
+     
+5. Karpukhin, V., Oguz, B., Min, S., Lewis, P., Wu, L., Edunov, S., Chen, D., & Yih, W. T. (2020). Dense Passage Retrieval for Open-Domain Question Answering. *Proceedings of EMNLP 2020*, 6769-6781.  
+     
+6. Hofstätter, S., Lin, S. C., Yang, J. H., Hanbury, A., & Reimers, N. (2021). Efficiently Teaching an Effective Dense Retriever with Balanced Topic Aware Sampling. *Proceedings of SIGIR 2021*, 113-122.  
+     
+7. Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. *Proceedings of EMNLP-IJCNLP 2019*, 3982-3992.  
+     
+8. OpenAI. (2024). GPT-4 Technical Report. *arXiv preprint arXiv:2303.08774*.  
+     
+9. Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, E. (2011). Scikit-learn: Machine Learning in Python. *Journal of Machine Learning Research*, 12, 2825-2830.  
+     
+10. Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P., Cournapeau, D., Wieser, E., Taylor, J., Berg, S., Smith, N. J., Kern, R., Picus, M., Hoyer, S., van Kerkwijk, M. H., Brett, M., Haldane, A., del Río, J. F., Wiebe, M., Peterson, P., ... & Oliphant, T. E. (2020). Array programming with NumPy. *Nature*, 585(7825), 357-362.
