@@ -2,9 +2,11 @@
 
 Bridge the gap between AI research and practical implementation. Search for theoretical concepts from arXiv papers and retrieve relevant code implementations with explanations.
 
+**Deployment Link** — https://arxivcode-frontend-215017069058.us-central1.run.app/ *(**Note:** the search UI may take 1–2 minutes to appear due to Cloud Run cold start.)*
+
 ## System Overview
 
-ArXivCode uses **CodeBERT embeddings** with a **hybrid retrieval system** to find relevant code snippets from ML/AI research paper implementations.
+ArXivCode uses **custom CodeBERT embeddings** with a **hybrid retrieval system** to find relevant code snippets from ML/AI research paper implementations.
 
 ## Key Features
 
@@ -29,6 +31,7 @@ ArXivCode uses **CodeBERT embeddings** with a **hybrid retrieval system** to fin
 
 ### Getting Started
 - **[Tutorial](Tutorial.md)** - Complete setup and usage guide
+- **[Deployment Link](https://arxivcode-frontend-215017069058.us-central1.run.app/)** - ***Note:** the search UI may take 1–2 minutes to appear due to Cloud Run cold start.*
 
 ### Project Documentation
 - **[Project Proposal](Proposal.md)** - Original project proposal and objectives
